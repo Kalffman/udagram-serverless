@@ -1,6 +1,7 @@
 import type { AWS } from "@serverless/typescript";
 
 import getGroups from "@functions/getGroups";
+import postGroup from "@functions/postGroup";
 
 const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
@@ -18,21 +19,25 @@ const serverlessConfiguration: AWS = {
     environment: {
       GROUPS_TABLE: "Groups-${self:provider.stage}"
     },
-    iamRoleStatements: [
-      {
-        Effect: "Allow",
-        Action: [
-          "dynamodb:Scan"
-        ],
-        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}"
+    iam: {
+      role: {
+        statements: [
+          {
+            Effect: "Allow",
+            Action: [
+              "dynamodb:Scan",
+              "dynamodb:PutItem"
+            ],
+            Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}"
+          }
+        ]
       }
-    ],
+    },
     lambdaHashingVersion: "20201221",
     stage: "${opt:stage, 'dev'}",
     region: "sa-east-1"
   },
-  // import the function via paths
-  functions: { getGroups },
+  functions: { getGroups, postGroup },
   resources: {
     Resources: {
       GroupsDynamoDBTable: {

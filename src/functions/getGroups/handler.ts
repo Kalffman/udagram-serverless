@@ -1,6 +1,5 @@
 
 import { DynamoDB } from "aws-sdk";
-import { middyfy } from "@libs/lambda";
 
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
 
@@ -28,4 +27,4 @@ const getGroups: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): P
     }
 }
 
-export const main = middyfy(getGroups);
+export const main = getGroups;

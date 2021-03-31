@@ -1,25 +1,21 @@
-
+import { ValidatedEventAPIGatewayProxyEvent } from "@libs/apiGateway";
+import { middyfy } from '@libs/lambda';
 import { DynamoDB } from "aws-sdk";
 import * as uuid from "uuid";
-
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
+import schema from "./schema";
 
 const docClient = new DynamoDB.DocumentClient();
 
 const groupsTable = process.env.GROUPS_TABLE;
 
-const postGroup: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+const postGroup: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
     console.log("Processando evento", event)
 
     const newItemId = uuid.v4();
 
-    console.log("event.body", event.body);
-
-    const parsedBody = JSON.parse(event.body);
-
     const newItem = {
         id: newItemId,
-        ...parsedBody
+        ...event.body
     }
 
     await docClient.put({
@@ -39,4 +35,4 @@ const postGroup: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): P
     }
 }
 
-export const main = postGroup;
+export const main = middyfy(postGroup);

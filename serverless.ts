@@ -7,6 +7,15 @@ const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
   frameworkVersion: "2",
   custom: {
+    documentation:{
+      api: {
+        info: {
+          version: "v1.0.0",
+          title: "Udagram API",
+          description: "Aplicação Serverless"
+        }
+      }
+    },
     webpack: {
       webpackConfig: "./webpack.config.js",
       includeModules: true,

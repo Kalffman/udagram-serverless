@@ -1,13 +1,19 @@
 import { ValidatedEventAPIGatewayProxyEvent } from "@libs/apiGateway";
 import { middyfy } from '@libs/lambda';
-import { DynamoDB } from "aws-sdk";
+import * as AWS from "aws-sdk";
 import * as uuid from "uuid";
 import schema from "./schema";
 
-const docClient = new DynamoDB.DocumentClient();
+const docClient = new AWS.DynamoDB.DocumentClient();
+
+const s3 = new AWS.S3({
+    signatureVersion: "v4"
+})
 
 const groupsTable = process.env.GROUPS_TABLE;
 const imagesTable = process.env.IMAGES_TABLE;
+const bucketName = process.env.IMAGES_S3_BUCKET;
+const urlExpiration = parseInt(process.env.SIGNED_URL_EXPIRATION);
 
 const postImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (event) => {
     console.log("Processando evento", event)
@@ -28,11 +34,15 @@ const postImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (even
     }
 
 
-    const newImageId = uuid.v4();
+    const imageId = uuid.v4();
+    const timestamp = new Date().toISOString();
 
     const newImage = {
-        id: newImageId,
-        ...event.body
+        groupId,
+        timestamp,
+        imageId,
+        ...event.body,
+        imageUrl: `https://${bucketName}.s3.amazonaws.com/${imageId}`
     }
 
     await docClient.put({
@@ -41,15 +51,26 @@ const postImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (even
     }).promise();
 
 
+    const url = getUploadUrl(imageId);
+
     return {
         statusCode: 201,
         headers: {
             "Access-Control-Allow-Origin": "*"
         },
         body: JSON.stringify({
-            newImage
+            newItem: newImage,
+            uploadUrl: url
         })
     }
+}
+
+function getUploadUrl(imageId: string) {
+    return s3.getSignedUrl("putObject", {
+        Bucket: bucketName,
+        Key: imageId,
+        Expires: urlExpiration
+    });
 }
 
 async function groupIdExists(groupId: string) {

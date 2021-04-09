@@ -7,7 +7,7 @@ export default {
         {
             http: {
                 method: 'post',
-                path: 'groups/{groupId}/image',
+                path: 'groups/{groupId}/images',
                 cors: true,
                 request: {
                     schema: {

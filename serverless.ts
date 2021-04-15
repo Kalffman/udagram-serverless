@@ -8,6 +8,7 @@ import postImage from "@functions/postImage";
 import imagesUploadEvent from "@functions/imagesUploadEvent";
 import connect from "@functions/websockets/connect";
 import disconnect from "@functions/websockets/disconnect";
+import dynamoStreamHandler from "@functions/dynamoDB";
 
 const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
@@ -85,14 +86,15 @@ const serverlessConfiguration: AWS = {
               "dynamodb:PutItem",
               "dynamodb:DeleteItem"
             ],
-            Resource: "arn:aws:dynamodb:${self:provider.region}:*:${self:provider.environment.CONNECTIONS_TABLE}"
+            Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}"
           }
         ]
       }
     },
     lambdaHashingVersion: "20201221",
     stage: "${opt:stage, 'dev'}",
-    region: "sa-east-1"
+    // @ts-ignore
+    region: "${opt:region, 'sa-east-1'}"
   },
   functions: {
     getGroups,
@@ -102,7 +104,8 @@ const serverlessConfiguration: AWS = {
     postImage,
     imagesUploadEvent,
     connect,
-    disconnect
+    disconnect,
+    dynamoStreamHandler
   },
   resources: {
     Resources: {
@@ -187,6 +190,9 @@ const serverlessConfiguration: AWS = {
             }
           ],
           BillingMode: "PAY_PER_REQUEST",
+          StreamSpecification:{
+            StreamViewType: "NEW_IMAGE"
+          },
           TableName: "${self:provider.environment.IMAGES_TABLE}"
         }
       },
@@ -225,6 +231,41 @@ const serverlessConfiguration: AWS = {
                 Resource: "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*"
               }
             ],
+          }
+        }
+      },
+
+      ImagesSearch: {
+        Type: "AWS::Elasticsearch::Domain",
+        Properties: {
+          ElasticsearchVersion: "6.3",
+          DomainName: "images-search-${self:provider.stage}",
+          ElasticsearchClusterConfig: {
+            DedicatedMasterEnabled: false,
+            InstanceCount: "1",
+            ZoneAwarenessEnabled: false,
+            InstanceType: "t2.small.elasticsearch",
+          },
+          EBSOptions: {
+            EBSEnabled: true,
+            Iops: 0,
+            VolumeSize: 10,
+            VolumeType: "gp2"
+          },
+          AccessPolicies: {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Principal: { AWS: "*" },
+                Effect: "Allow",
+                Action: [
+                  "es:ESHttp"
+                ],
+                Resource: {
+                  "Fn::Sub": "arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*"
+                }
+              }
+            ]
           }
         }
       }

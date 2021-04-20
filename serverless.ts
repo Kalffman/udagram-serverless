@@ -9,11 +9,13 @@ import imagesUploadEvent from "@functions/imagesUploadEvent";
 import connect from "@functions/websockets/connect";
 import disconnect from "@functions/websockets/disconnect";
 import dynamoStreamHandler from "@functions/dynamoDB";
+import resizeToThumbnails from "@functions/resizeToThumbnails";
 
 const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
   frameworkVersion: "2",
   custom: {
+    topicName: "imagesTopic-${self:provider.stage}",
     documentation: {
       api: {
         info: {
@@ -39,6 +41,7 @@ const serverlessConfiguration: AWS = {
       IMAGE_ID_INDEX: "ImageIdIndex",
       CONNECTIONS_TABLE: "Connections-${self:provider.stage}",
       IMAGES_S3_BUCKET: "kalffman-serverless-udagram-images-${self:provider.stage}",
+      THUMBNAILS_S3_BUCKET: "kalffman-serverless-udagram-thumbnails-${self:provider.stage}",
       SIGNED_URL_EXPIRATION: "300"
     },
     iam: {
@@ -70,7 +73,13 @@ const serverlessConfiguration: AWS = {
             ],
             Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}"
           },
-
+          {
+            Effect: "Allow",
+            Action: [
+              "s3:PutObject",
+            ],
+            Resource: "arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*"
+          },
           {
             Effect: "Allow",
             Action: [
@@ -105,7 +114,8 @@ const serverlessConfiguration: AWS = {
     imagesUploadEvent,
     connect,
     disconnect,
-    dynamoStreamHandler
+    dynamoStreamHandler,
+    resizeToThumbnails
   },
   resources: {
     Resources: {
@@ -197,10 +207,36 @@ const serverlessConfiguration: AWS = {
         }
       },
 
-      AttachmentsBucket: {
+      ThumbnailsBucket: {
         Type: "AWS::S3::Bucket",
         Properties: {
+          BucketName: "${self:provider.environment.THUMBNAILS_S3_BUCKET}",
+          CorsConfiguration: {
+            CorsRules: [
+              {
+                AllowedOrigins: ["*"],
+                AllowedHeaders: ["*"],
+                AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
+                MaxAge: 3000
+              }
+            ]
+          }
+        }
+      },
+
+      AttachmentsBucket: {
+        Type: "AWS::S3::Bucket",
+        DependsOn: [ "ImagesTopic" ],
+        Properties: {
           BucketName: "${self:provider.environment.IMAGES_S3_BUCKET}",
+          NotificationConfiguration: {
+            TopicConfigurations: [
+              {
+                Event: "s3:ObjectCreated:Put",
+                Topic: { Ref: "ImagesTopic" }
+              }
+            ],
+          },
           CorsConfiguration: {
             CorsRules: [
               {
@@ -267,6 +303,39 @@ const serverlessConfiguration: AWS = {
               }
             ]
           }
+        }
+      },
+
+      ImagesTopic: {
+        Type: "AWS::SNS::Topic",
+        Properties: {
+          DisplayName: "Images Bucket Topic",
+          TopicName: "${self:custom.topicName}"
+        }
+      },
+
+      SNSTopicPolicy: {
+        Type: "AWS::SNS::TopicPolicy",
+        Properties: {
+          PolicyDocument: {
+            Version: "2012-10-17",
+            Statement: [
+              {
+                Effect: "Allow",
+                Principal: { AWS: "*" },
+                Action: "sns:Publish",
+                Resource: {Ref: "ImagesTopic"},
+                Condition: {
+                  ArnLike: {
+                    "AWS:SourceArn": "arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}"
+                  }
+                }
+              }
+            ]
+          },
+          Topics: [
+            { Ref: "ImagesTopic" }
+          ]
         }
       }
     }

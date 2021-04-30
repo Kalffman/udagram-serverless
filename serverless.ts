@@ -11,6 +11,7 @@ import disconnect from "@functions/websockets/disconnect";
 import dynamoStreamHandler from "@functions/dynamoDB";
 import resizeToThumbnails from "@functions/resizeToThumbnails";
 import auth from "@functions/auth";
+import authRS256 from "@functions/authRS256";
 
 const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
@@ -133,7 +134,8 @@ const serverlessConfiguration: AWS = {
     disconnect,
     dynamoStreamHandler,
     resizeToThumbnails,
-    auth
+    auth,
+    authRS256
   },
   resources: {
     Resources: {

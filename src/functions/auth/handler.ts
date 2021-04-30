@@ -3,7 +3,7 @@ import {
     CustomAuthorizerResult
 } from "aws-lambda";
 import {verify } from "jsonwebtoken";
-import {JwtToken } from "../../auth";
+import {JwtToken } from "../../auth/jwtToken";
 import * as middy from "middy";
 import {secretsManager} from "middy/middlewares";
 

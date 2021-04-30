@@ -25,7 +25,8 @@ const postImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (even
         return {
             statusCode: 404,
             headers: {
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": "*"
             },
             body: JSON.stringify({
                 error: `Group id "${groupId}" not found.`

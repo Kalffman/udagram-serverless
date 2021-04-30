@@ -29,7 +29,6 @@ Dependendo do seu gerenciador de pacotes, siga as instruções abaixo para levan
 ## Testes
 
 Copie e cole a `url` (encontrado ao final da execução de `deploy`) e execute no terminal com o comando `curl` ou usando o postman
-ekif1ewtl4
 
 ```
 curl 'https://<<api-getway-id>>.execute-api.<<aws-region>>.amazonaws.com/dev/groups'

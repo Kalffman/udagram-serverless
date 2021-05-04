@@ -18,6 +18,17 @@ const serverlessConfiguration: AWS = {
   frameworkVersion: "2",
   custom: {
     topicName: "imagesTopic-${self:provider.stage}",
+    "serverless-offline": {
+      port: "3003"
+    },
+    dynamodb: {
+      start: {
+        port: 8000,
+        inMemory: true,
+        migrate: true
+      },
+      stages:["dev"]
+    },
     documentation: {
       api: {
         info: {
@@ -32,7 +43,11 @@ const serverlessConfiguration: AWS = {
       includeModules: true,
     },
   },
-  plugins: ["serverless-webpack"],
+  plugins: [
+    "serverless-webpack",
+    "serverless-dynamodb-local",
+    "serverless-offline"
+  ],
   provider: {
     name: "aws",
     profile: "serverless",

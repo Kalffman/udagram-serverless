@@ -5,7 +5,7 @@ import { Group } from "../models/Group";
 
 export class GroupDataLayerAWS {
     constructor(
-        private readonly docClient: DocumentClient = new AWS.DynamoDB.DocumentClient(),
+        private readonly docClient: DocumentClient = createDynamoDbClient(),
         private readonly groupsTable = process.env.GROUPS_TABLE
     ) {}
 
@@ -31,4 +31,17 @@ export class GroupDataLayerAWS {
 
         return group;
     }
+}
+
+function createDynamoDbClient() {
+    if (process.env.IS_OFFLINE) {
+        console.log("Criando instância local de Dynamodb");
+
+        return new AWS.DynamoDB.DocumentClient({
+            region: "localhost",
+            endpoint: "http://localhost:8000"
+        });
+    }
+
+    return new AWS.DynamoDB.DocumentClient();
 }

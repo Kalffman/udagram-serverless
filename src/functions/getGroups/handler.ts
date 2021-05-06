@@ -1,20 +1,17 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
 import * as GroupBusiness from "../../business/groupBusiness";
+import * as express from "express";
+import * as AWSExpress from 'aws-serverless-express'
 
-const getGroups: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    console.log("Processando evento", event)
+const app = express();
 
+app.get("/groups", async (_req, res) => {
     const groups = await GroupBusiness.getAllGroups();
 
-    return {
-        statusCode: 200,
-        headers: {
-            "Access-Control-Allow-Origin": "*"
-        },
-        body: JSON.stringify({
-            items: groups
-        })
-    }
-}
+    res.json({
+        items: groups
+    })
+});
 
-export const main = getGroups;
+const server = AWSExpress.createServer(app);
+
+export const main = (event, context) => {AWSExpress.proxy(server, event, context)};

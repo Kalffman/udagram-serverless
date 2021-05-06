@@ -17,6 +17,14 @@ const serverlessConfiguration: AWS = {
   service: "serverless-udagram-app",
   frameworkVersion: "2",
   custom: {
+    warmup: {
+      enabled: true,
+      name: "warn-up-function",
+      payload: {
+        isWarmup: true
+      },
+      concurrency: 5
+    },
     topicName: "imagesTopic-${self:provider.stage}",
     "serverless-offline": {
       port: "3003"
@@ -46,9 +54,21 @@ const serverlessConfiguration: AWS = {
   plugins: [
     "serverless-webpack",
     "serverless-dynamodb-local",
-    "serverless-offline"
+    "serverless-offline",
+    "serverless-iam-roles-per-function",
+    "serverless-plugin-canary-deployments",
+    "serverless-plugin-tracing",
+    "serverless-plugin-warmup"
   ],
+// TODO habilitar quando for compilar functions em zip fragmentadas
+//  package: {
+//    individually: true
+// },
   provider: {
+    tracing: {
+      apiGateway: true,
+      lambda: true
+    },
     name: "aws",
     profile: "serverless",
     runtime: "nodejs12.x",
@@ -129,6 +149,21 @@ const serverlessConfiguration: AWS = {
               "kms:Decrypt"
             ],
             Resource: { "Fn::GetAtt": ["KMSKey", "Arn"] }
+          },
+          {
+            Effect: "Allow",
+            Action: [
+              "codedeploy:*"
+            ],
+            Resource: ["*"]
+          },
+          {
+            Effect: "Allow",
+            Action: [
+              "xray:PutTraceSegments",
+              "xray:PutTelemetryRecords"
+            ],
+            Resource: ["*"]
           }
         ]
       }

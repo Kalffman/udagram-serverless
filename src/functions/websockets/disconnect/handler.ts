@@ -1,9 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
 import 'source-map-support';
 import * as AWS from 'aws-sdk';
+import * as AWSXRay from "aws-xray-sdk";
 
+const XAWS = AWSXRay.captureAWS(AWS);
 
-const docClient = new AWS.DynamoDB.DocumentClient();
+const docClient = new XAWS.DynamoDB.DocumentClient();
 
 const connectionsTabel = process.env.CONNECTIONS_TABLE;
 

@@ -13,11 +13,13 @@ export async function getAllGroups(): Promise<Group[]> {
 export async function createGroup(request: CreateGroupRequest, jwtToken: string): Promise<Group> {
     const itemId = uuid.v4();
     const userId = getUserId(jwtToken);
+    const timestamp = new Date().toISOString();
 
     return await groupData.createGroup({
         id: itemId,
         userId,
         name: request.name,
-        description: request.description
+        description: request.description,
+        timestamp
     });
 }

@@ -1,7 +1,10 @@
 import * as AWS from "aws-sdk";
+import * as AWSXRay from "aws-xray-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 import { Group } from "../models/Group";
+
+const XAWS = AWSXRay.captureAWS(AWS);
 
 export class GroupDataLayerAWS {
     constructor(
@@ -37,11 +40,11 @@ function createDynamoDbClient() {
     if (process.env.IS_OFFLINE) {
         console.log("Criando instância local de Dynamodb");
 
-        return new AWS.DynamoDB.DocumentClient({
+        return new XAWS.DynamoDB.DocumentClient({
             region: "localhost",
             endpoint: "http://localhost:8000"
         });
     }
 
-    return new AWS.DynamoDB.DocumentClient();
+    return new XAWS.DynamoDB.DocumentClient();
 }
